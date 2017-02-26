@@ -7,15 +7,38 @@
 
 int 	is_dir(char *path)
 {
-	struct stat statbuf;
-	if (stat(path, &statbuf) != 0)
+	struct stat buff;
+	if (stat(path, &buff) != 0)
 		return (0);
-	if (statbuf.st_mode & S_IFDIR)
+	if (buff.st_mode & S_IFDIR)
 		return (1);
 	else
 		return (0);
 }
 
+time_t	get_atime(char *path)
+{
+	struct stat buff;
+	if (stat(path, &buff) != 0)
+		return (0);
+	return (buff.st_atime);
+}
+
+time_t	get_mtime(char *path)
+{
+	struct stat buff;
+	if (stat(path, &buff) != 0)
+		return (0);
+	return (buff.st_mtime);
+}
+
+time_t	get_ctime(char *path)
+{
+	struct stat buff;
+	if (stat(path, &buff) != 0)
+		return (0);
+	return (buff.st_ctime);
+}
 
 // void 	print_files(char *path)
 // {
@@ -50,6 +73,9 @@ t_elem	*make_elem(char *path)
 	elem->dir = is_dir(path);
 	elem->path = path;
 	elem->name = ft_strsplit(path, '/')[get_count(path, '/') - 1];
+	elem->atime = get_atime(path);
+	elem->mtime = get_mtime(path);
+	elem->ctime = get_ctime(path);
 	return (elem);
 }
 
@@ -70,19 +96,20 @@ t_list	*print_files(char *path)
 			elem = make_elem(new_path);
 			if (elem->dir && !ft_strequ(ent->d_name, ".") && !ft_strequ(ent->d_name, ".."))
 				elem->list = print_files(elem->path);
-			lst = ft_lstnew(elem, sizeof(elem));
+			lst = ft_lstnew(elem);
 		}
 		while ((ent = readdir(dir)) != NULL)
 		{
 			new_path = ft_strjoin(path, "/");
 			new_path = ft_strjoin(new_path, ent->d_name);
 			elem = make_elem(new_path);
-			ft_lstadd(&lst, ft_lstnew(elem, sizeof(elem)));
+			ft_lstadd(&lst, ft_lstnew(elem));
 			if (elem->dir && !ft_strequ(ent->d_name, ".") && !ft_strequ(ent->d_name, ".."))
 				elem->list = print_files(elem->path);
 		}
 		closedir(dir);
 	}
+	sort_list(&lst, time_cmp);
 	return (lst);
 }
 
@@ -96,17 +123,17 @@ void 	print_list(t_list *list)
 	{
 		elem = list->content;
 		if (!ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.')
-			printf("%s ", elem->name);
+			printf("%s:%s", elem->name, ctime(&elem->mtime));
 		list = list->next;
 	}
-	printf("\n\n");
+	printf("\n");
 	list = list_tmp;
 	while (list)
 	{
 		elem = list->content;
 		if (elem->dir && !ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.')
 		{
-			printf("%s:\n", elem->path);
+			printf("%s:%s\n", elem->path, ctime(&elem->mtime));
 			print_list(elem->list);
 		}
 		list = list->next;
