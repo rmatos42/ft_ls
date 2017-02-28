@@ -19,7 +19,18 @@ typedef	struct	s_elem
 	long		ctime_nsec;
 	int			nlink;
 	int			size;
+	char		*group_name;
+	char		*user_name;
 }				t_elem;
+
+typedef struct	s_flags
+{
+	int			l;			//long format
+	int			r;			//reverse sort
+	int			a;			//display hidden files
+	int			recursive;	//list files recursively
+	int			t;			//sort by time
+}				t_flags;
 
 void 	sort_list(t_list **list, int (*f)(t_elem *, t_elem *));
 int		alpha_cmp(t_elem *elem1, t_elem *elem2);

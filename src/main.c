@@ -3,6 +3,8 @@
 #include <dirent.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <grp.h>
+#include <pwd.h>
 #include "ft_ls.h"
 
 int 	is_dir(char *path)
@@ -80,6 +82,22 @@ int		get_size(char *path)
 	return buff.st_size;
 }
 
+char	*get_group_name(char *path)
+{
+	struct stat buff;
+	if (stat(path, &buff) != 0)
+		return (0);
+	return getgrgid(buff.st_gid)->gr_name;
+}
+
+char	*get_user_name(char *path)
+{
+	struct stat buff;
+	if (stat(path, &buff) != 0)
+		return (0);
+	return getpwuid(buff.st_uid)->pw_name;
+}
+
 char	*get_permissions(char *path)
 {
 	char	*result;
@@ -118,10 +136,12 @@ t_elem	*make_elem(char *path)
 	elem->ctime_nsec = get_ctime_nsec(path);
 	elem->nlink = get_link_count(path);
 	elem->size = get_size(path);
+	elem->group_name = get_group_name(path);
+	elem->user_name = get_user_name(path);
 	return (elem);
 }
 
-t_list	*file_list(char *path)
+t_list	*file_list(char *path, t_flags flags)
 {
 	DIR				*dir;
 	char			*new_path;
@@ -137,7 +157,7 @@ t_list	*file_list(char *path)
 			new_path = ft_strjoin(new_path, ent->d_name);
 			elem = make_elem(new_path);
 			if (elem->dir && !ft_strequ(ent->d_name, ".") && !ft_strequ(ent->d_name, ".."))
-				elem->list = file_list(elem->path);
+				elem->list = file_list(elem->path, flags);
 			lst = ft_lstnew(elem);
 		}
 		while ((ent = readdir(dir)) != NULL)
@@ -147,15 +167,22 @@ t_list	*file_list(char *path)
 			elem = make_elem(new_path);
 			ft_lstadd(&lst, ft_lstnew(elem));
 			if (elem->dir && !ft_strequ(ent->d_name, ".") && !ft_strequ(ent->d_name, ".."))
-				elem->list = file_list(elem->path);
+				elem->list = file_list(elem->path, flags);
 		}
 		closedir(dir);
 	}
-	sort_list(&lst, alpha_cmp);
+	if (flags.t && flags.r)
+		sort_list(&lst, time_cmp_rev);
+	else if (flags.t)
+		sort_list(&lst, time_cmp);
+	else if (flags.r)
+		sort_list(&lst, alpha_cmp_rev);
+	else
+		sort_list(&lst, alpha_cmp);
 	return (lst);
 }
 
-void 	print_recursive(t_list *list)
+void 	print_recursive(t_list *list, t_flags flags)
 {
 	t_list 	*list_tmp;
 	t_elem	*elem;
@@ -164,8 +191,8 @@ void 	print_recursive(t_list *list)
 	while (list)
 	{
 		elem = list->content;
-		// if (!ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.')
-		printf("%s %i %i:%s:%s", get_permissions(elem->path), elem->nlink, elem->size, elem->name, ctime(&elem->mtime));
+		if ((!ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.') || flags.a)
+			printf("%s %i %s %s %i:%s:%s", get_permissions(elem->path), elem->nlink, elem->group_name, elem->user_name, elem->size, elem->name, ctime(&elem->mtime));
 		list = list->next;
 	}
 	printf("\n");
@@ -176,7 +203,7 @@ void 	print_recursive(t_list *list)
 		if (elem->dir && !ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.')
 		{
 			printf("%s\n", elem->path);
-			print_recursive(elem->list);
+			print_recursive(elem->list, flags);
 		}
 		list = list->next;
 	}
@@ -190,14 +217,30 @@ void 	print_files(t_list *list)
 	{
 		elem = list->content;
 		if (!ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.')
-			printf("%s:%s\n", elem->name, ctime(&elem->mtime));
+			printf("%s:%s", elem->name, ctime(&elem->mtime));
 		list = list->next;
 	}
 }
 
+t_flags	make_flags(char *str)
+{
+	t_flags flags;
+
+	flags.l = (ft_strchr(str, 'l')) ? 1 : 0;
+	flags.r = (ft_strchr(str, 'r')) ? 1 : 0;
+	flags.a = (ft_strchr(str, 'a')) ? 1 : 0;
+	flags.recursive = (ft_strchr(str, 'R')) ? 1 : 0;
+	flags.t = (ft_strchr(str, 't')) ? 1 : 0;
+	return (flags);
+}
+
 int		main(int argc, char **argv)
 {
-	t_list *lst = file_list(".");
-	print_recursive(lst);
+	t_flags flags = make_flags(argv[1]);
+	t_list *lst = file_list(".", flags);
+	if (flags.recursive)
+		print_recursive(lst, flags);
+	else
+		print_files(lst);
 
 }
