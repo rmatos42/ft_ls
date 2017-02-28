@@ -98,6 +98,14 @@ char	*get_user_name(char *path)
 	return getpwuid(buff.st_uid)->pw_name;
 }
 
+int		get_blocks(char *path)
+{
+	struct stat buff;
+	if (stat(path, &buff) != 0)
+		return (0);
+	return (buff.st_blocks);
+}
+
 char	*get_permissions(char *path)
 {
 	char	*result;
@@ -138,6 +146,7 @@ t_elem	*make_elem(char *path)
 	elem->size = get_size(path);
 	elem->group_name = get_group_name(path);
 	elem->user_name = get_user_name(path);
+	elem->blocks = get_blocks(path);
 	return (elem);
 }
 
@@ -182,17 +191,34 @@ t_list	*file_list(char *path, t_flags flags)
 	return (lst);
 }
 
+int		get_block_total(t_list *list, t_flags flags)
+{
+	t_elem	*elem;
+	int		sum;
+
+	sum = 0;
+	while (list)
+	{
+		elem = list->content;
+		if ((!ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.') || flags.a)
+			sum += elem->blocks;
+		list = list->next;
+	}
+	return (sum);
+}
+
 void 	print_recursive(t_list *list, t_flags flags)
 {
 	t_list 	*list_tmp;
 	t_elem	*elem;
 
 	list_tmp = list;
+	printf("total: %i\n", get_block_total(list, flags));
 	while (list)
 	{
 		elem = list->content;
 		if ((!ft_strequ(elem->name, ".") && !ft_strequ(elem->name, "..") && elem->name[0] != '.') || flags.a)
-			printf("%s %i %s %s %i:%s:%s", get_permissions(elem->path), elem->nlink, elem->group_name, elem->user_name, elem->size, elem->name, ctime(&elem->mtime));
+			printf("%s %i %s %s %i:%s:%s", get_permissions(elem->path), elem->blocks, elem->group_name, elem->user_name, elem->size, elem->name, ctime(&elem->mtime));
 		list = list->next;
 	}
 	printf("\n");
@@ -221,6 +247,8 @@ void 	print_files(t_list *list)
 		list = list->next;
 	}
 }
+
+
 
 t_flags	make_flags(char *str)
 {

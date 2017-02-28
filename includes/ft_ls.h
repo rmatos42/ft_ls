@@ -21,6 +21,7 @@ typedef	struct	s_elem
 	int			size;
 	char		*group_name;
 	char		*user_name;
+	int			blocks;
 }				t_elem;
 
 typedef struct	s_flags
