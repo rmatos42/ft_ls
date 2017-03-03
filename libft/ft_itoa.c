@@ -11,8 +11,9 @@
 /* ************************************************************************** */
 
 #include "libft.h"
+#include <stdio.h>
 
-int		base_len(int nb)
+int		nb_len(int nb)
 {
 	int i;
 
@@ -34,7 +35,7 @@ char	*ft_itoa(int nb)
 	int		i;
 	long	value;
 
-	len = base_len(nb);
+	len = nb_len(nb);
 	i = len - 1;
 	value = (long)nb;
 	result = (char *)ft_memalloc(sizeof(char) * (len + 1));

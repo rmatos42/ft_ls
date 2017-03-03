@@ -1,14 +1,17 @@
 #ifndef FT_LS_H
 # define FT_LS_H
 
-#include "libft.h"
+#include <libft.h>
 #include <stdio.h>
 #include <time.h>
+#include <project.h>
 
 typedef	struct	s_elem
 {
 	int			dir;
+	int			link;
 	t_list		*list;
+	char		*lname;
 	char		*name;
 	char		*path;
 	time_t		atime; //last access

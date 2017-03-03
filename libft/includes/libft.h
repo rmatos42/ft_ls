@@ -82,5 +82,6 @@ t_list				*ft_lstnew(void *content);
 void				ft_lstadd(t_list **alst, t_list *new);
 void				ft_lstiter(t_list *lst, void (*f)(t_list *elem));
 int					get_count(const char *str, char c);
+int					nb_len(int nb);
 
 #endif

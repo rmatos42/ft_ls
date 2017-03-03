@@ -24,7 +24,6 @@ $(NAME): libft.a
 
 clean:
 	make -C libft fclean
-	make -C mlx clean
 
 fclean: clean
 	rm -rf $(NAME)
