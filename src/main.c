@@ -5,6 +5,9 @@
 #include <sys/stat.h>
 #include <grp.h>
 #include <pwd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/xattr.h>
 #include "ft_ls.h"
 
 char	get_filetype(int mode)
@@ -29,6 +32,7 @@ char	get_filetype(int mode)
 char	*get_permissions(char *path)
 {
 	char	*result;
+	char	*list;
 	struct stat	buff;
 
 	result = (char *)ft_memalloc(sizeof(char) * 12);
@@ -44,7 +48,7 @@ char	*get_permissions(char *path)
 	result[7] = (buff.st_mode & S_IROTH) ? 'r' : '-';
 	result[8] = (buff.st_mode & S_IWOTH) ? 'w' : '-';
 	result[9] = (buff.st_mode & S_IXOTH) ? 'x' : '-';
-	result[10] = ' ';
+	result[10] = (listxattr(path, NULL, 0, 0)) ? '@' : ' ';
 	result[11] = '\0';
 	return (result);
 }
@@ -56,6 +60,7 @@ t_elem	*make_elem(char *path, t_flags flags)
 	char	str[255 + 1];
 	size_t	i;
 
+	errno = 0;
 	if (lstat(path, &buff) != 0)
 		return (0);
 	elem = (t_elem *)ft_memalloc(sizeof(t_elem));
@@ -68,7 +73,8 @@ t_elem	*make_elem(char *path, t_flags flags)
 	else
 		elem->link = 0;
 	if (elem->link && !flags.l)
-		stat(path, &buff);
+		if (stat(path, &buff) != 0)
+			return (0);
 	elem->dir = S_ISDIR(buff.st_mode) ? 1 : 0;
 	elem->path = path;
 	elem->name = ft_strsplit(path, '/')[get_count(path, '/') - 1];
@@ -78,7 +84,6 @@ t_elem	*make_elem(char *path, t_flags flags)
 	elem->size = buff.st_size;
 	elem->group_name = ft_strdup(getgrgid(buff.st_gid)->gr_name);
 	elem->user_name = ft_strdup(getpwuid(buff.st_uid)->pw_name);
-	printf("%i:%s\n", getpwuid(buff.st_uid), elem->user_name);
 	elem->blocks = buff.st_blocks;
 	return (elem);
 }
